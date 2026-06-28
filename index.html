@@ -116,6 +116,13 @@
   table.hist th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); background:#F3F8F9}
   table.hist td.amt{text-align:right; font-weight:600}
   table.hist tr:last-child td{border-bottom:none}
+  table.hist td.open{text-align:right; padding:6px 12px; width:1%; white-space:nowrap}
+  .openq{background:var(--teal); color:#fff; border:none; border-radius:7px; padding:5px 13px; font:inherit; font-size:12px; font-weight:600; cursor:pointer}
+  .openq:hover{background:var(--teal-deep)}
+  .hist-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px}
+  .hist-head h3{margin:0}
+  #histSearch{flex:0 1 240px; padding:8px 11px; border:1px solid var(--border); border-radius:9px; font:inherit; font-size:13px; background:#fff}
+  #histSearch:focus{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal)}
   .empty-h{color:var(--muted); font-size:13px; padding:14px 2px}
   footer{max-width:1080px; margin:30px auto 0; padding:0 22px; color:var(--muted); font-size:12px}
   .sla{padding:12px 14px; background:#fff; border-top:1px solid #EDF2F4; font-size:12.5px}
@@ -236,7 +243,7 @@
   </aside>
 </main>
 
-<div class="history"><h3>Recent quotes (this session)</h3><div id="histWrap"><div class="empty-h">No saved quotes yet.</div></div></div>
+<div class="history"><div class="hist-head"><h3>Recent quotes</h3><input id="histSearch" type="text" placeholder="Search prospect or author…" /></div><div id="histWrap"><div class="empty-h">No saved quotes yet.</div></div></div>
 <footer>Indicative quotations — not a binding commercial offer. Demo build with embedded pricing.</footer>
 
 <script>
@@ -417,13 +424,45 @@ $("save").onclick=async ()=>{
   if(error){ toast("Save failed: "+error.message,false); return; }
   toast("Quote saved."); loadHistory();
 };
+let histQuotes=[];
 async function loadHistory(){
   if(!sb){ $("histWrap").innerHTML=`<div class="empty-h">Connect Supabase to see saved quotes.</div>`; return; }
-  const {data,error}=await sb.from("quotes").select("*").order("created_at",{ascending:false}).limit(20);
+  const {data,error}=await sb.from("quotes").select("*").order("created_at",{ascending:false}).limit(50);
   if(error){ $("histWrap").innerHTML=`<div class="empty-h">${error.message}</div>`; return; }
-  if(!data||!data.length){ $("histWrap").innerHTML=`<div class="empty-h">No saved quotes yet.</div>`; return; }
-  $("histWrap").innerHTML=`<table class="hist"><thead><tr><th>Date</th><th>Prospect</th><th>By</th><th>Band</th><th>Items</th><th style="text-align:right">Total</th></tr></thead><tbody>${
-    data.map(q=>`<tr><td class="num">${new Date(q.created_at).toLocaleDateString("en-GB")}</td><td>${q.prospect_name||"—"}</td><td>${q.author||"—"}</td><td class="num">${q.band??"—"}</td><td class="num">${Array.isArray(q.modules)?q.modules.length:0}</td><td class="amt num">${moneyIn(Number(q.total_gbp)||0,q.currency,q.fx_rate)}</td></tr>`).join("")}</tbody></table>`;
+  histQuotes = data || [];
+  renderHist();
+}
+function renderHist(){
+  const term = ($("histSearch") ? $("histSearch").value : "").trim().toLowerCase();
+  if(!histQuotes.length){ $("histWrap").innerHTML=`<div class="empty-h">No saved quotes yet.</div>`; return; }
+  const rows = term ? histQuotes.filter(q => ((q.prospect_name||"")+" "+(q.author||"")).toLowerCase().includes(term)) : histQuotes;
+  if(!rows.length){ $("histWrap").innerHTML=`<div class="empty-h">No quote matches \u201c${escapeHtml(term)}\u201d.</div>`; return; }
+  $("histWrap").innerHTML=`<table class="hist"><thead><tr><th>Date</th><th>Prospect</th><th>By</th><th>Band</th><th>Items</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody>${
+    rows.map(q=>`<tr><td class="num">${new Date(q.created_at).toLocaleDateString("en-GB")}</td><td>${escapeHtml(q.prospect_name||"\u2014")}</td><td>${escapeHtml(q.author||"\u2014")}</td><td class="num">${q.band??"\u2014"}</td><td class="num">${Array.isArray(q.modules)?q.modules.length:0}</td><td class="amt num">${moneyIn(Number(q.total_gbp)||0,q.currency,q.fx_rate)}</td><td class="open"><button class="openq" data-id="${q.id}">Open</button></td></tr>`).join("")}</tbody></table>`;
+  document.querySelectorAll(".openq").forEach(b=>{ b.onclick=()=>loadQuote(histQuotes.find(x=>String(x.id)===String(b.dataset.id))); });
+}
+if($("histSearch")) $("histSearch").addEventListener("input",renderHist);
+
+function loadQuote(q){
+  if(!q) return;
+  $("prospect").value = q.prospect_name || "";
+  $("author").value = q.author || "";
+  $("orders").value = q.annual_orders ? groupThousands(q.annual_orders) : "";
+  const ccy = q.currency || "EUR";
+  if(ccy!=="EUR" && q.fx_rate!=null) rates[ccy]=Number(q.fx_rate)||1;
+  setCurrency(ccy);
+  $("support").value = q.support || "standard";
+  updateSupportDeps();
+  const keys = new Set((Array.isArray(q.modules)?q.modules:[]).map(m=>m.key));
+  TICKS.forEach(([k])=>{ const cb=$("m_"+k); if(cb) cb.checked=keys.has(k); });
+  const rcb=$("m_premium_recovery"); if(rcb && !rcb.disabled) rcb.checked=keys.has("premium_recovery");
+  apps = (Array.isArray(q.apps) && q.apps.length)
+    ? q.apps.map(a=>({name:a.name||"", setup:Number(a.setup)||0, recurring:Number(a.recurring)||0}))
+    : [{name:"",setup:0,recurring:0}];
+  renderApps();
+  recompute();
+  toast("Quote loaded into the form.");
+  window.scrollTo({top:0,behavior:"smooth"});
 }
 
 /* PDF */
