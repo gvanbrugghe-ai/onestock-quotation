@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>OneStock · Quote Generator (Demo)</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL      = "https://YOUR-PROJECT.supabase.co";
+  const SUPABASE_ANON_KEY = "YOUR-ANON-KEY";
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<style>
+  :root{
+    --brand:#0B2B4A; --brand-deep:#082238; --teal:#0F857F; --teal-deep:#0A6E69;
+    --ink:#16232E; --muted:#5C7080; --paper:#F6F9FA; --tint:#E7F3F1;
+    --border:#DCE5EA; --white:#fff; --good:#138a6e;
+    --shadow:0 1px 2px rgba(11,43,74,.06),0 8px 24px rgba(11,43,74,.07);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:Inter,system-ui,-apple-system,sans-serif; color:var(--ink);
+    background:var(--paper); font-feature-settings:"tnum" 1; line-height:1.5}
+  .num{font-variant-numeric:tabular-nums}
+
+  header{background:var(--brand); color:#fff; padding:0 22px; display:flex; align-items:center;
+    justify-content:space-between; height:60px; position:sticky; top:0; z-index:20; box-shadow:0 1px 0 rgba(0,0,0,.08)}
+  .brand{display:flex; align-items:baseline; gap:10px}
+  .wordmark{font-weight:800; font-size:20px; letter-spacing:-.02em}
+  .wordmark span{opacity:.6}
+  .tagline{font-size:12px; font-weight:500; opacity:.8; letter-spacing:.02em; border-left:1px solid rgba(255,255,255,.35); padding-left:10px}
+  .ccy{display:flex; align-items:center; gap:10px}
+  .ccy .seg{display:flex; background:rgba(255,255,255,.14); border-radius:8px; padding:3px}
+  .ccy .seg button{all:unset; cursor:pointer; padding:5px 11px; border-radius:6px; font-size:13px; font-weight:600; color:#fff; opacity:.8}
+  .ccy .seg button.on{background:#fff; color:var(--brand); opacity:1}
+  .fx{display:none; align-items:center; gap:6px; font-size:12px; opacity:.95}
+  .fx.show{display:flex}
+  .fx input{width:62px; border:none; border-radius:6px; padding:4px 7px; font:inherit; font-size:12px; text-align:right; color:var(--ink)}
+
+  main{max-width:1080px; margin:0 auto; padding:24px 22px 64px; display:grid; grid-template-columns:1fr 360px; gap:22px; align-items:start}
+  @media(max-width:880px){ main{grid-template-columns:1fr} }
+  .card{background:#fff; border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow)}
+  .card .hd{padding:14px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px}
+  .step{display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; background:var(--tint); color:var(--teal-deep); border-radius:50%; font-size:12px; font-weight:700}
+  .hd h2{margin:0; font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+  .bd{padding:18px}
+
+  label.fld{display:block; font-size:12px; font-weight:600; color:var(--muted); margin:0 0 6px}
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media(max-width:520px){ .row{grid-template-columns:1fr} }
+  input[type=text],input[type=number]{width:100%; font:inherit; padding:10px 12px; border:1px solid var(--border); border-radius:10px; background:#fff; color:var(--ink)}
+  input:focus{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal)}
+
+  .orders{display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap}
+  .orders .field{flex:1; min-width:170px}
+  .bandchip{display:flex; flex-direction:column; gap:2px; padding:10px 14px; border-radius:10px; background:var(--tint); border:1px solid #C5E5E1; min-width:190px}
+  .bandchip .b{font-weight:700; color:var(--brand-deep); font-size:15px}
+  .bandchip .r{font-size:12px; color:var(--muted)}
+  .bandchip.empty{background:#F1F6F7; border-color:var(--border)}
+  .bandchip.empty .b{color:var(--muted); font-weight:600; font-size:13px}
+
+  /* Core platform block */
+  .core{display:flex; align-items:center; justify-content:space-between; gap:14px}
+  .core .lab{font-size:14px; font-weight:600}
+  .core .sub{font-size:12px; color:var(--muted)}
+  .core .val{font-size:20px; font-weight:800; color:var(--brand-deep); letter-spacing:-.01em}
+
+  /* Group sections */
+  .grouplabel{display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:.08em;
+    text-transform:uppercase; color:var(--brand-deep); margin:16px 2px 7px}
+  .grouplabel:first-child{margin-top:2px}
+  .grouplabel::before{content:""; width:3px; height:13px; background:var(--teal); border-radius:2px}
+  .group{border:1px solid var(--border); border-radius:11px; overflow:hidden}
+  .mod{display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid #EDF2F4; background:#fff}
+  .mod:last-child{border-bottom:none}
+  .mod input[type=checkbox]{width:18px; height:18px; accent-color:var(--teal); cursor:pointer}
+  .mod .nm{flex:1; font-size:14px}
+  .mod .px{font-size:13px; color:var(--muted); min-width:92px; text-align:right}
+  .mod.on .px{color:var(--ink); font-weight:600}
+  .mod.disabled{opacity:.45}
+  .mod.disabled input{cursor:not-allowed}
+  .support{display:flex; align-items:center; gap:12px; padding:12px 14px; background:#fff; border-bottom:1px solid #EDF2F4}
+  .support .nm{flex:1; font-size:14px; font-weight:500}
+  select{font:inherit; padding:8px 10px; border:1px solid var(--border); border-radius:9px; background:#fff}
+
+  aside{position:sticky; top:84px}
+  .sum .line{display:flex; justify-content:space-between; gap:10px; padding:8px 0; font-size:13.5px}
+  .sum .line .l{color:var(--muted)}
+  .sum .line.omc .l{color:var(--ink); font-weight:600}
+  .sum .div{height:1px; background:var(--border); margin:8px 0}
+  .total{display:flex; justify-content:space-between; align-items:baseline; gap:10px; background:var(--tint); margin:6px -18px -18px; padding:16px 18px; border-radius:0 0 14px 14px; border-top:1px solid #C5E5E1}
+  .total .l{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--brand-deep)}
+  .total .v{font-size:26px; font-weight:800; color:var(--brand-deep); letter-spacing:-.02em; text-align:right}
+  .total .v small{font-size:11px; font-weight:600; color:var(--muted); display:block}
+  .actions{display:flex; gap:10px; margin-top:14px}
+  button.btn{all:unset; cursor:pointer; flex:1; text-align:center; padding:11px 14px; border-radius:10px; font-weight:600; font-size:14px}
+  button.primary{background:var(--teal-deep); color:#fff}
+  button.primary:hover{background:#095a56}
+  button.ghost{background:#fff; color:var(--teal); border:1px solid var(--teal)}
+  button.ghost:hover{background:var(--tint)}
+  .toast{font-size:12.5px; margin-top:10px; min-height:16px}
+  .toast.ok{color:var(--good)} .toast.err{color:#c0392b}
+
+  .banner{max-width:1080px; margin:18px auto 0; padding:10px 16px; border-radius:10px; background:var(--tint); border:1px solid #C5E5E1; color:var(--brand-deep); font-size:12.5px}
+  .history{max-width:1080px; margin:22px auto 0; padding:0 22px}
+  .history h3{font-size:13px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 10px}
+  table.hist{width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--border); border-radius:12px; overflow:hidden; font-size:13.5px}
+  table.hist th,table.hist td{text-align:left; padding:10px 14px; border-bottom:1px solid #EDF2F4}
+  table.hist th{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); background:#F3F8F9}
+  table.hist td.amt{text-align:right; font-weight:600}
+  table.hist tr:last-child td{border-bottom:none}
+  .empty-h{color:var(--muted); font-size:13px; padding:14px 2px}
+  footer{max-width:1080px; margin:30px auto 0; padding:0 22px; color:var(--muted); font-size:12px}
+  .sla{padding:12px 14px; background:#fff; border-top:1px solid #EDF2F4; font-size:12.5px}
+  .sla .srow{display:flex; justify-content:space-between; gap:12px; padding:3px 0}
+  .sla .srow .k{color:var(--muted)}
+  .sla .srow .v{font-weight:500; text-align:right}
+  .sla .sdiv{height:1px; background:#EDF2F4; margin:7px 0}
+  .sla .v.rec{color:var(--brand-deep); font-weight:600}
+  .sla .foot{color:var(--muted); font-size:11px; margin-top:6px}
+  .app{display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px; padding:11px 14px; background:#fff; border-bottom:1px solid #EDF2F4}
+  .app:last-child{border-bottom:none}
+  .app .appName{flex:1 1 140px; min-width:120px; padding:8px 10px}
+  .app .appf{display:flex; flex-direction:column; gap:3px}
+  .app .appf label{font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  .app .appNum{width:104px; padding:8px 10px}
+  .app .appPct{min-width:46px; text-align:right; font-weight:700; font-size:13px; color:var(--teal-deep); padding-bottom:8px; font-variant-numeric:tabular-nums}
+  .app .appPct.low{color:#c0392b}
+  .app .appDel{all:unset; cursor:pointer; color:var(--muted); font-size:20px; line-height:1; padding:0 4px 6px}
+  .app .appDel:hover{color:#c0392b}
+  .addapp{all:unset; cursor:pointer; display:inline-block; margin-top:8px; color:var(--teal); font-weight:600; font-size:13px}
+  .addapp:hover{text-decoration:underline}
+  .sum .seg{font-size:10px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin:11px 0 1px; padding-top:8px; border-top:1px solid #EDF2F4}
+  .sum .seg:first-child{margin-top:0; padding-top:0; border-top:none}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><div class="wordmark">One<span>Stock</span></div><div class="tagline">Quote Generator · Demo</div></div>
+  <div class="ccy">
+    <div class="fx" id="fxWrap"><span id="fxLabel">£→€</span><input id="fx" type="number" step="0.001" /></div>
+    <div class="seg">
+      <button class="on" data-ccy="GBP">£ GBP</button>
+      <button data-ccy="EUR">€ EUR</button>
+      <button data-ccy="USD">$ USD</button>
+    </div>
+  </div>
+</header>
+
+<div id="banner" class="banner" style="display:none"></div>
+
+<main>
+  <section style="display:flex; flex-direction:column; gap:22px">
+    <div class="card">
+      <div class="hd"><span class="step">1</span><h2>Prospect &amp; volume</h2></div>
+      <div class="bd">
+        <div class="row" style="margin-bottom:16px">
+          <div><label class="fld" for="prospect">Prospect / account</label><input id="prospect" type="text" placeholder="e.g. Orlebar Brown" /></div>
+          <div><label class="fld" for="author">Prepared by</label><input id="author" type="text" placeholder="Your name" /></div>
+        </div>
+        <div class="orders">
+          <div class="field"><label class="fld" for="orders">Annual order volume</label><input id="orders" type="number" min="0" step="1000" placeholder="e.g. 75000" /></div>
+          <div id="bandchip" class="bandchip empty"><span class="b">— enter a volume</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><span class="step">2</span><h2>OneStock Core Platform</h2></div>
+      <div class="bd">
+        <div class="core">
+          <div><div class="lab">Core Platform</div><div class="sub">Always included in every quote</div></div>
+          <div class="val num" id="omcVal">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><span class="step">3</span><h2>Configure</h2></div>
+      <div class="bd" style="padding-top:14px">
+        <div class="grouplabel">Modules</div>
+        <div class="group" id="grp_modules"></div>
+
+        <div class="grouplabel">Connectors</div>
+        <div class="group" id="grp_connectors"></div>
+
+        <div class="grouplabel">Options</div>
+        <div class="group" id="grp_options"></div>
+
+        <div class="grouplabel">OneStock App</div>
+        <div class="group" id="grp_apps"></div>
+        <button id="addApp" class="addapp">+ Add app</button>
+
+        <div class="grouplabel">Support</div>
+        <div class="group">
+          <div class="support">
+            <span class="nm">Support</span>
+            <span id="supPx" class="px num" style="font-size:13px; color:var(--muted); min-width:92px; text-align:right">—</span>
+            <select id="support"><option value="standard">Standard</option><option value="premium">Premium</option><option value="247">24/7</option></select>
+          </div>
+          <div class="mod" id="row_premium_recovery">
+            <input type="checkbox" id="m_premium_recovery" />
+            <span class="nm">Recovery <span id="recHint" style="font-size:11px; color:var(--muted); font-weight:400">· Premium &amp; 24/7</span></span>
+            <span class="px num" id="px_premium_recovery">—</span>
+          </div>
+          <div class="sla" id="supportDetail"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside>
+    <div class="card sum">
+      <div class="hd"><h2 style="letter-spacing:.06em">Quote summary</h2></div>
+      <div class="bd">
+        <div id="lines"></div>
+        <div class="total"><span class="l">Total / year</span><span class="v"><span id="total" class="num">—</span><small id="totalNote"></small></span></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="save" class="btn ghost">Save quote</button>
+      <button id="pdf" class="btn primary">Export PDF</button>
+    </div>
+    <div id="toast" class="toast"></div>
+  </aside>
+</main>
+
+<div class="history"><h3>Recent quotes (this session)</h3><div id="histWrap"><div class="empty-h">No saved quotes yet.</div></div></div>
+<footer>Indicative quotations — not a binding commercial offer. Demo build with embedded pricing.</footer>
+
+<script>
+let PRICING = [];
+
+const GROUPS = {
+  modules:[["customer_promise","Customer Promise"],["sfs","Ship from Store"],["click_collect","Click & Collect"],
+    ["reserve_collect","Reserve & Collect"],["order_in_store","Order in Store (OIS)"],["unified_return","Unified Return"],
+    ["future_stock","Future Stock"],["business_intelligence","Business Intelligence"]],
+  connectors:[["ecommerce_connector","Shopify Plus Connector"]],
+  options:[["store_notification","Store Notification"],["realtime_stock_api","Real-Time Stock API"]],
+};
+const TICKS=[...GROUPS.modules,...GROUPS.connectors,...GROUPS.options];
+let apps=[{name:"",setup:0,recurring:0}];
+function escapeHtml(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function appPct(a){ const set=Number(a.setup)||0, rec=Number(a.recurring)||0; return set>0 ? rec/set*100 : null; }
+function pctTxt(p){ return p==null ? "—" : (Math.round(p*10)/10)+"%"; }
+function renderApps(){
+  $("grp_apps").innerHTML = apps.map((a,i)=>{
+    const p=appPct(a); const low = p!=null && p<30 ? " low":"";
+    return `<div class="app">
+      <input class="appName" id="an_${i}" placeholder="App name" value="${escapeHtml(a.name)}" />
+      <div class="appf"><label>Setup</label><input class="appNum" id="as_${i}" type="number" min="0" step="500" value="${a.setup||""}" placeholder="0" /></div>
+      <div class="appf"><label>Recurring / yr</label><input class="appNum" id="ar_${i}" type="number" min="0" step="100" value="${a.recurring||""}" placeholder="0" /></div>
+      <div class="appPct${low}" id="ap_${i}">${pctTxt(p)}</div>
+      <button class="appDel" id="ad_${i}" title="Remove">×</button>
+    </div>`;
+  }).join("");
+  apps.forEach((a,i)=>{
+    $("an_"+i).addEventListener("input",e=>{ apps[i].name=e.target.value; recompute(); });
+    $("as_"+i).addEventListener("input",e=>{ apps[i].setup=Number(e.target.value)||0; apps[i].recurring=Math.round(apps[i].setup*0.3); $("ar_"+i).value=apps[i].recurring||""; updatePct(i); recompute(); });
+    $("ar_"+i).addEventListener("input",e=>{ apps[i].recurring=Number(e.target.value)||0; updatePct(i); recompute(); });
+    $("ad_"+i).addEventListener("click",()=>{ apps.splice(i,1); if(!apps.length) apps.push({name:"",setup:0,recurring:0}); renderApps(); recompute(); });
+  });
+}
+function updatePct(i){ const p=appPct(apps[i]); const el=$("ap_"+i); el.textContent=pctTxt(p); el.classList.toggle("low", p!=null && p<30); }
+function addApp(){ apps.push({name:"",setup:0,recurring:0}); renderApps(); }
+
+const SYM={GBP:"£",EUR:"€",USD:"$"}, LOCALE={GBP:"en-GB",EUR:"fr-FR",USD:"en-US"};
+let currency="EUR"; const rates={EUR:1, USD:1};
+const SLA={
+  standard:{sla:"99%",hours:"09:00 – 18:00",days:"Monday to Friday",bank:"Not included",credit:"Standard"},
+  premium:{sla:"99.5%",hours:"08:00 – 20:00",days:"Monday to Saturday",bank:"Included",credit:"Standard"},
+  "247":{sla:"99.9%",hours:"00:00 – 24:00",days:"Monday to Sunday",bank:"Included",credit:"Custom"},
+};
+const RECOVERY={ base:{label:"Included in all support services",rpo:"4 hours",rto:"4 hours"},
+  premium:{label:"Disaster recovery premium",rpo:"30s",rto:"30 min"} };
+const SUP_NAME={standard:"Standard",premium:"Premium","247":"24/7"};
+let sb=null;
+const configured=!SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
+function showBanner(msg){ const b=$("banner"); b.style.display="block"; b.textContent=msg; }
+const $=(id)=>document.getElementById(id);
+
+function money(gbp){ if(gbp==null||isNaN(gbp))return"—"; const v=currency==="GBP"?gbp:gbp*rates[currency];
+  return new Intl.NumberFormat(LOCALE[currency],{style:"currency",currency,maximumFractionDigits:0}).format(v); }
+function moneyIn(gbp,ccy,rate){ const v= ccy==="GBP"?gbp:gbp*(rate??1);
+  return new Intl.NumberFormat(LOCALE[ccy],{style:"currency",currency:ccy,maximumFractionDigits:0}).format(v); }
+function resolveBand(o){ if(o===""||o==null||isNaN(o))return null;
+  const rows=[...PRICING].sort((a,b)=>a.band-b.band);
+  for(const r of rows){ if(Number(o)<=Number(r.order_max))return r; } return rows[rows.length-1]||null; }
+
+function selectedModules(row){
+  const out=[];
+  TICKS.forEach(([k,label])=>{ if($("m_"+k).checked) out.push({key:k,label,cost_gbp:Number(row[k])||0}); });
+  const s=$("support").value;
+  const SUPLBL={standard:"Standard",premium:"Premium","247":"24/7"};
+  out.push({key:"support_"+s,label:"Support — "+SUPLBL[s],cost_gbp:Number(row["support_"+s])||0,included:s==="standard"});
+  if(s!=="standard" && $("m_premium_recovery").checked) out.push({key:"premium_recovery",label:"Recovery",cost_gbp:Number(row.premium_recovery)||0});
+  return out;
+}
+
+function rowHTML(k,label){ return `<div class="mod" id="row_${k}"><input type="checkbox" id="m_${k}" /><span class="nm">${label}</span><span class="px num" id="px_${k}">—</span></div>`; }
+function buildGroups(){
+  $("grp_modules").innerHTML=GROUPS.modules.map(([k,l])=>rowHTML(k,l)).join("");
+  $("grp_connectors").innerHTML=GROUPS.connectors.map(([k,l])=>rowHTML(k,l)).join("");
+  $("grp_options").innerHTML=GROUPS.options.map(([k,l])=>rowHTML(k,l)).join("");
+  TICKS.forEach(([k])=>{ $("m_"+k).addEventListener("change",recompute);
+    $("row_"+k).addEventListener("click",e=>{ if(e.target.tagName!=="INPUT"){ $("m_"+k).checked=!$("m_"+k).checked; recompute(); }}); });
+  // recovery row (built in markup)
+  $("row_premium_recovery").addEventListener("click",e=>{ const cb=$("m_premium_recovery");
+    if(e.target.tagName!=="INPUT" && !cb.disabled){ cb.checked=!cb.checked; recompute(); }});
+  $("m_premium_recovery").addEventListener("change",recompute);
+}
+
+function updateSupportDeps(){
+  const paid=$("support").value!=="standard";
+  const rec=$("row_premium_recovery"), cb=$("m_premium_recovery");
+  rec.classList.toggle("disabled",!paid);
+  cb.disabled=!paid;
+  if(!paid) cb.checked=false;
+  $("recHint").textContent = paid ? "" : "· Premium & 24/7";
+}
+
+function renderSLA(){
+  const s=$("support").value; const d=SLA[s];
+  const recOn = s!=="standard" && $("m_premium_recovery").checked;
+  const r = recOn ? RECOVERY.premium : RECOVERY.base;
+  $("supportDetail").innerHTML =
+    `<div class="srow"><span class="k">SLA target</span><span class="v">${d.sla}</span></div>`+
+    `<div class="srow"><span class="k">Support hours*</span><span class="v">${d.hours}</span></div>`+
+    `<div class="srow"><span class="k">Support days</span><span class="v">${d.days}</span></div>`+
+    `<div class="srow"><span class="k">Bank holidays*</span><span class="v">${d.bank}</span></div>`+
+    `<div class="srow"><span class="k">Credit service</span><span class="v">${d.credit}</span></div>`+
+    `<div class="sdiv"></div>`+
+    `<div class="srow"><span class="k">Recovery</span><span class="v rec">${r.label}</span></div>`+
+    `<div class="srow"><span class="k">RPO / RTO</span><span class="v">${r.rpo} / ${r.rto}</span></div>`+
+    `<div class="foot">* related to the location of the customer’s headquarters</div>`;
+}
+function recompute(){
+  renderSLA();
+  const row=resolveBand($("orders").value); const chip=$("bandchip");
+  $("omcVal").textContent = row ? money(row.omc) : "—";
+  TICKS.forEach(([k])=>{ $("px_"+k).textContent=row?money(row[k]):"—"; $("row_"+k).classList.toggle("on",row&&$("m_"+k).checked); });
+  const s=$("support").value;
+  $("supPx").textContent = !row ? "—" : (s==="standard" ? "Included" : money(row["support_"+s]));
+  $("px_premium_recovery").textContent = row ? money(row.premium_recovery) : "—";
+  $("row_premium_recovery").classList.toggle("on", row && s!=="standard" && $("m_premium_recovery").checked);
+
+  if(!row){ chip.className="bandchip empty"; chip.innerHTML=`<span class="b">— enter a volume</span>`;
+    $("lines").innerHTML=`<div class="line"><span class="l">Enter an annual order volume to build a quote.</span></div>`;
+    $("total").textContent="—"; $("totalNote").textContent=""; return; }
+  chip.className="bandchip"; chip.innerHTML=`<span class="b">Band ${row.band}</span><span class="r num">${Number(row.order_min).toLocaleString("en-GB")} – ${Number(row.order_max).toLocaleString("en-GB")} orders/yr</span>`;
+
+  const omc=Number(row.omc)||0; let total=omc;
+  const L=(label,amt)=>`<div class="line"><span class="l">${label}</span><span class="num">${amt}</span></div>`;
+  const pick=(arr)=>arr.filter(([k])=>$("m_"+k).checked).map(([k,label])=>({label,cost:Number(row[k])||0}));
+  const grp=(title,items)=>{ if(!items.length) return ""; let h=`<div class="seg">${title}</div>`; items.forEach(m=>{ total+=m.cost; h+=L(m.label,money(m.cost)); }); return h; };
+  let html=`<div class="seg">Core platform</div>`+L("OneStock Core Platform",money(omc));
+  html+=grp("Modules",pick(GROUPS.modules));
+  html+=grp("Connectors",pick(GROUPS.connectors));
+  html+=grp("Options",pick(GROUPS.options));
+  const appItems=[];
+  apps.forEach(a=>{ const rec=Number(a.recurring)||0, set=Number(a.setup)||0; if(rec>0||set>0) appItems.push({name:a.name,rec}); });
+  if(appItems.length){ html+=`<div class="seg">OneStock App</div>`; appItems.forEach(a=>{ total+=a.rec; html+=L(escapeHtml(a.name||"OneStock App")+" (recurring)",money(a.rec)); }); }
+  html+=`<div class="seg">Support</div>`;
+  const supCost=Number(row["support_"+s])||0; total+=supCost;
+  html+=L("Support — "+SUP_NAME[s], s==="standard"?"Included":money(supCost));
+  if(s!=="standard" && $("m_premium_recovery").checked){ const rc=Number(row.premium_recovery)||0; total+=rc; html+=L("Recovery",money(rc)); }
+  $("lines").innerHTML=html+`<div class="div"></div>`;
+  $("total").textContent=money(total);
+  $("totalNote").textContent = currency==="GBP" ? "" : `rate £→${SYM[currency]} = ${rates[currency]}`;
+}
+
+/* currency */
+function setCurrency(c){
+  currency=c;
+  document.querySelectorAll(".ccy .seg button").forEach(b=>b.classList.toggle("on",b.dataset.ccy===c));
+  const nonGbp=c!=="GBP"; $("fxWrap").classList.toggle("show",nonGbp);
+  if(nonGbp){ $("fxLabel").textContent=`£→${SYM[c]}`; $("fx").value=rates[c]; }
+  recompute();
+}
+document.querySelectorAll(".ccy .seg button").forEach(b=>b.onclick=()=>setCurrency(b.dataset.ccy));
+$("fx").addEventListener("input",e=>{ if(currency!=="GBP"){ rates[currency]=Number(e.target.value)||1; recompute(); }});
+$("orders").addEventListener("input",recompute);
+$("support").addEventListener("change",()=>{ updateSupportDeps(); recompute(); });
+$("addApp").onclick=addApp;
+
+/* save (session only) */
+function toast(msg,ok=true){ const t=$("toast"); t.textContent=msg; t.className="toast "+(ok?"ok":"err");
+  setTimeout(()=>{ if(t.textContent===msg){t.textContent="";t.className="toast";} },4000); }
+$("save").onclick=async ()=>{
+  const row=resolveBand($("orders").value); if(!row){ toast("Enter an annual order volume first.",false); return; }
+  if(!sb){ toast("Connect Supabase to save quotes.",false); return; }
+  const mods=selectedModules(row); const omc=Number(row.omc)||0;
+  const appRec=apps.reduce((s,a)=>s+(Number(a.recurring)||0),0);
+  const appSetup=apps.reduce((s,a)=>s+(Number(a.setup)||0),0);
+  const total=omc+mods.reduce((s,m)=>s+m.cost_gbp,0)+appRec;
+  $("save").disabled=true;
+  const {error}=await sb.from("quotes").insert({ prospect_name:$("prospect").value||null, author:$("author").value||null,
+    annual_orders:Number($("orders").value)||null, band:row.band, currency, fx_rate:currency==="GBP"?null:rates[currency],
+    support:$("support").value, modules:mods, apps:apps.filter(a=>a.setup||a.recurring||a.name), setup_total_gbp:appSetup, omc_gbp:omc, total_gbp:total });
+  $("save").disabled=false;
+  if(error){ toast("Save failed: "+error.message,false); return; }
+  toast("Quote saved."); loadHistory();
+};
+async function loadHistory(){
+  if(!sb){ $("histWrap").innerHTML=`<div class="empty-h">Connect Supabase to see saved quotes.</div>`; return; }
+  const {data,error}=await sb.from("quotes").select("*").order("created_at",{ascending:false}).limit(20);
+  if(error){ $("histWrap").innerHTML=`<div class="empty-h">${error.message}</div>`; return; }
+  if(!data||!data.length){ $("histWrap").innerHTML=`<div class="empty-h">No saved quotes yet.</div>`; return; }
+  $("histWrap").innerHTML=`<table class="hist"><thead><tr><th>Date</th><th>Prospect</th><th>By</th><th>Band</th><th>Items</th><th style="text-align:right">Total</th></tr></thead><tbody>${
+    data.map(q=>`<tr><td class="num">${new Date(q.created_at).toLocaleDateString("en-GB")}</td><td>${q.prospect_name||"—"}</td><td>${q.author||"—"}</td><td class="num">${q.band??"—"}</td><td class="num">${Array.isArray(q.modules)?q.modules.length:0}</td><td class="amt num">${moneyIn(Number(q.total_gbp)||0,q.currency,q.fx_rate)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+/* PDF */
+$("pdf").onclick=()=>{
+  const row=resolveBand($("orders").value); if(!row){ toast("Enter an annual order volume first.",false); return; }
+  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
+  const W=210, brand=[11,43,74], teal=[15,133,127], deep=[10,110,105], ink=[22,35,46], muted=[92,112,128];
+  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
+  doc.setFillColor(...brand); doc.rect(0,0,W,30,"F");
+  doc.setTextColor(255); doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.text("OneStock",16,16);
+  doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(199,214,227); doc.text("Quotation",16,23);
+  doc.setFontSize(10); doc.text(today,W-16,16,{align:"right"});
+  let y=44; doc.setTextColor(...ink); doc.setFont("helvetica","bold"); doc.setFontSize(15);
+  doc.text($("prospect").value||"Prospect",16,y);
+  doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...muted);
+  if($("author").value) doc.text("Prepared by "+$("author").value,16,y+6);
+  doc.text(`Annual orders: ${Number($("orders").value||0).toLocaleString("en-GB")}`,W-16,y,{align:"right"});
+  doc.text(`Band ${row.band} · ${Number(row.order_min).toLocaleString("en-GB")}–${Number(row.order_max).toLocaleString("en-GB")}/yr`,W-16,y+6,{align:"right"});
+  doc.text(`Currency: ${currency}${currency!=="GBP"?` (rate ${rates[currency]})`:""}`,W-16,y+12,{align:"right"});
+  const mods=selectedModules(row); const omc=Number(row.omc)||0; let total=omc;
+  const body=[["OneStock Core Platform (included)",money(omc)]];
+  mods.forEach(m=>{ total+=m.cost_gbp; body.push([m.label, m.included?"Included":money(m.cost_gbp)]); });
+  apps.forEach(a=>{ const rec=Number(a.recurring)||0; if(rec>0){ total+=rec; body.push([`${a.name||"OneStock App"} (recurring)`, money(rec)]); } });
+  doc.autoTable({ startY:y+20, head:[["Item","Annual cost"]], body, foot:[["Total annual cost",money(total)]], theme:"grid",
+    styles:{font:"helvetica",fontSize:10,cellPadding:3,textColor:ink,lineColor:[220,229,234]},
+    headStyles:{fillColor:teal,textColor:255,fontStyle:"bold"},
+    footStyles:{fillColor:[231,243,241],textColor:brand,fontStyle:"bold",fontSize:11},
+    columnStyles:{1:{halign:"right",cellWidth:48}}, margin:{left:16,right:16} });
+  const sName=SUP_NAME[$("support").value]; const sd=SLA[$("support").value];
+  const recOn2=$("support").value!=="standard" && $("m_premium_recovery").checked;
+  const rc=recOn2?RECOVERY.premium:RECOVERY.base;
+  doc.autoTable({ startY:doc.lastAutoTable.finalY+8,
+    head:[[`Support coverage — ${sName}`,""]],
+    body:[["SLA target",sd.sla],["Support hours*",sd.hours],["Support days",sd.days],["Bank holidays*",sd.bank],["Credit service",sd.credit],["Recovery",rc.label],["RPO / RTO",`${rc.rpo} / ${rc.rto}`]],
+    theme:"grid", styles:{font:"helvetica",fontSize:9.5,cellPadding:2.6,textColor:ink,lineColor:[220,229,234]},
+    headStyles:{fillColor:brand,textColor:255,fontStyle:"bold"},
+    columnStyles:{0:{cellWidth:55,textColor:muted}}, margin:{left:16,right:16} });
+  let yy=doc.lastAutoTable.finalY+10; doc.setFontSize(8.5); doc.setTextColor(...muted);
+  if(currency!=="GBP"){ doc.text(`${currency} amounts converted from base at an indicative rate of ${rates[currency]}.`,16,yy); yy+=4.5; }
+  doc.text("* Support hours and bank holidays relate to the location of the customer’s headquarters.",16,yy); yy+=4.5;
+  doc.text("This is an indicative quotation and does not constitute a binding commercial offer.",16,yy);
+  doc.setDrawColor(220,229,234); doc.line(16,280,W-16,280);
+  doc.text("OneStock · Order Management System",16,285); doc.text(today,W-16,285,{align:"right"});
+  const safe=($("prospect").value||"quote").replace(/[^a-z0-9]+/gi,"_");
+  doc.save(`OneStock_Quote_${safe}_${new Date().toISOString().slice(0,10)}.pdf`);
+};
+
+/* init */
+async function loadPricing(){
+  if(!configured){ showBanner("Supabase not configured — set SUPABASE_URL and SUPABASE_ANON_KEY at the top of this file, then run supabase_setup.sql and import pricing.csv."); return; }
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  const {data,error}=await sb.from("pricing").select("*").order("band");
+  if(error){ showBanner("Could not load pricing: "+error.message); return; }
+  PRICING=data||[]; recompute(); loadHistory();
+}
+buildGroups();
+renderApps();
+$("support").value="standard";   // default Support = Standard
+updateSupportDeps();
+setCurrency("EUR");
+recompute();
+loadPricing();
+</script>
+</body>
+</html>
