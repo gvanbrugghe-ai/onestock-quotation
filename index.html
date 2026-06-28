@@ -42,7 +42,7 @@
   .ccy .seg button.on{background:#fff; color:var(--brand); opacity:1}
   .fx{display:none; align-items:center; gap:6px; font-size:12px; opacity:.95}
   .fx.show{display:flex}
-  .fx input{width:62px; border:none; border-radius:6px; padding:4px 7px; font:inherit; font-size:12px; text-align:right; color:var(--ink)}
+  .fx input{width:44px; border:none; border-radius:6px; padding:4px 7px; font:inherit; font-size:12px; text-align:right; color:var(--ink)}
 
   main{max-width:1080px; margin:0 auto; padding:24px 22px 64px; display:grid; grid-template-columns:1fr 360px; gap:22px; align-items:start}
   @media(max-width:880px){ main{grid-template-columns:1fr} }
@@ -127,10 +127,13 @@
   .sla .foot{color:var(--muted); font-size:11px; margin-top:6px}
   .app{display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px; padding:11px 14px; background:#fff; border-bottom:1px solid #EDF2F4}
   .app:last-child{border-bottom:none}
-  .app .appName{flex:1 1 140px; min-width:120px; padding:8px 10px}
+  .app .appName{flex:1 1 120px; min-width:110px; padding:8px 10px}
   .app .appf{display:flex; flex-direction:column; gap:3px}
   .app .appf label{font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
-  .app .appNum{width:104px; padding:8px 10px}
+  .app .cur{display:flex; align-items:center; border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden}
+  .app .cur:focus-within{outline:2px solid var(--teal); outline-offset:1px; border-color:var(--teal)}
+  .app .cur .sym{padding:0 5px 0 9px; color:var(--muted); font-size:13px}
+  .app .appNum{width:120px; padding:8px 10px 8px 2px; border:none; outline:none; background:transparent}
   .app .appPct{min-width:46px; text-align:right; font-weight:700; font-size:13px; color:var(--teal-deep); padding-bottom:8px; font-variant-numeric:tabular-nums}
   .app .appPct.low{color:#c0392b}
   .app .appDel{all:unset; cursor:pointer; color:var(--muted); font-size:20px; line-height:1; padding:0 4px 6px}
@@ -146,10 +149,10 @@
 <header>
   <div class="brand"><div class="wordmark">One<span>Stock</span></div><div class="tagline">Quote Generator · Demo</div></div>
   <div class="ccy">
-    <div class="fx" id="fxWrap"><span id="fxLabel">£→€</span><input id="fx" type="number" step="0.001" /></div>
+    <div class="fx" id="fxWrap"><span id="fxLabel">€→£</span><input id="fx" type="number" step="0.001" /></div>
     <div class="seg">
-      <button class="on" data-ccy="GBP">£ GBP</button>
-      <button data-ccy="EUR">€ EUR</button>
+      <button class="on" data-ccy="EUR">€ EUR</button>
+      <button data-ccy="GBP">£ GBP</button>
       <button data-ccy="USD">$ USD</button>
     </div>
   </div>
@@ -167,7 +170,7 @@
           <div><label class="fld" for="author">Prepared by</label><input id="author" type="text" placeholder="Your name" /></div>
         </div>
         <div class="orders">
-          <div class="field"><label class="fld" for="orders">Annual order volume</label><input id="orders" type="number" min="0" step="1000" placeholder="e.g. 75000" /></div>
+          <div class="field"><label class="fld" for="orders">Annual order volume</label><input id="orders" type="text" inputmode="numeric" placeholder="e.g. 75,000" /></div>
           <div id="bandchip" class="bandchip empty"><span class="b">— enter a volume</span></div>
         </div>
       </div>
@@ -256,24 +259,25 @@ function renderApps(){
     const p=appPct(a); const low = p!=null && p<30 ? " low":"";
     return `<div class="app">
       <input class="appName" id="an_${i}" placeholder="App name" value="${escapeHtml(a.name)}" />
-      <div class="appf"><label>Setup</label><input class="appNum" id="as_${i}" type="number" min="0" step="500" value="${a.setup||""}" placeholder="0" /></div>
-      <div class="appf"><label>Recurring / yr</label><input class="appNum" id="ar_${i}" type="number" min="0" step="100" value="${a.recurring||""}" placeholder="0" /></div>
+      <div class="appf"><label>Setup</label><div class="cur"><span class="sym">${SYM[currency]}</span><input class="appNum" id="as_${i}" type="text" inputmode="numeric" value="${a.setup?groupThousands(a.setup):""}" placeholder="0" /></div></div>
+      <div class="appf"><label>Recurring / yr</label><div class="cur"><span class="sym">${SYM[currency]}</span><input class="appNum" id="ar_${i}" type="text" inputmode="numeric" value="${a.recurring?groupThousands(a.recurring):""}" placeholder="0" /></div></div>
       <div class="appPct${low}" id="ap_${i}">${pctTxt(p)}</div>
       <button class="appDel" id="ad_${i}" title="Remove">×</button>
     </div>`;
   }).join("");
   apps.forEach((a,i)=>{
     $("an_"+i).addEventListener("input",e=>{ apps[i].name=e.target.value; recompute(); });
-    $("as_"+i).addEventListener("input",e=>{ apps[i].setup=Number(e.target.value)||0; apps[i].recurring=Math.round(apps[i].setup*0.3); $("ar_"+i).value=apps[i].recurring||""; updatePct(i); recompute(); });
-    $("ar_"+i).addEventListener("input",e=>{ apps[i].recurring=Number(e.target.value)||0; updatePct(i); recompute(); });
+    $("as_"+i).addEventListener("input",e=>{ fmtField(e.target); apps[i].setup=digitsToNum(e.target.value); apps[i].recurring=Math.round(apps[i].setup*0.3); $("ar_"+i).value=groupThousands(apps[i].recurring); updatePct(i); recompute(); });
+    $("ar_"+i).addEventListener("input",e=>{ fmtField(e.target); apps[i].recurring=digitsToNum(e.target.value); updatePct(i); recompute(); });
     $("ad_"+i).addEventListener("click",()=>{ apps.splice(i,1); if(!apps.length) apps.push({name:"",setup:0,recurring:0}); renderApps(); recompute(); });
   });
 }
 function updatePct(i){ const p=appPct(apps[i]); const el=$("ap_"+i); el.textContent=pctTxt(p); el.classList.toggle("low", p!=null && p<30); }
+function updateAppSymbols(){ document.querySelectorAll(".app .cur .sym").forEach(s=>{ s.textContent=SYM[currency]; }); }
 function addApp(){ apps.push({name:"",setup:0,recurring:0}); renderApps(); }
 
 const SYM={GBP:"£",EUR:"€",USD:"$"}, LOCALE={GBP:"en-GB",EUR:"fr-FR",USD:"en-US"};
-let currency="EUR"; const rates={EUR:1, USD:1};
+let currency="EUR"; const rates={GBP:1, USD:1};
 const SLA={
   standard:{sla:"99%",hours:"09:00 – 18:00",days:"Monday to Friday",bank:"Not included",credit:"Standard"},
   premium:{sla:"99.5%",hours:"08:00 – 20:00",days:"Monday to Saturday",bank:"Included",credit:"Standard"},
@@ -286,10 +290,14 @@ let sb=null;
 const configured=!SUPABASE_URL.includes("YOUR-PROJECT") && !SUPABASE_ANON_KEY.includes("YOUR-ANON");
 function showBanner(msg){ const b=$("banner"); b.style.display="block"; b.textContent=msg; }
 const $=(id)=>document.getElementById(id);
+function groupThousands(s){ const d=String(s).replace(/[^\d]/g,""); return d ? d.replace(/\B(?=(\d{3})+(?!\d))/g,",") : ""; }
+function digitsToNum(s){ const d=String(s).replace(/[^\d]/g,""); return d===""?0:Number(d); }
+function ordersVal(){ const d=$("orders").value.replace(/[^\d]/g,""); return d===""?"":Number(d); }
+function fmtField(el){ const sel=el.selectionStart, before=el.value.slice(0,sel).replace(/[^\d]/g,"").length, f=groupThousands(el.value); el.value=f; let pos=0,c=0; while(pos<f.length && c<before){ if(/\d/.test(f[pos]))c++; pos++; } try{ el.setSelectionRange(pos,pos); }catch(e){} }
 
-function money(gbp){ if(gbp==null||isNaN(gbp))return"—"; const v=currency==="GBP"?gbp:gbp*rates[currency];
+function money(gbp){ if(gbp==null||isNaN(gbp))return"—"; const v=currency==="EUR"?gbp:gbp*rates[currency];
   return new Intl.NumberFormat(LOCALE[currency],{style:"currency",currency,maximumFractionDigits:0}).format(v); }
-function moneyIn(gbp,ccy,rate){ const v= ccy==="GBP"?gbp:gbp*(rate??1);
+function moneyIn(gbp,ccy,rate){ const v= ccy==="EUR"?gbp:gbp*(rate??1);
   return new Intl.NumberFormat(LOCALE[ccy],{style:"currency",currency:ccy,maximumFractionDigits:0}).format(v); }
 function resolveBand(o){ if(o===""||o==null||isNaN(o))return null;
   const rows=[...PRICING].sort((a,b)=>a.band-b.band);
@@ -344,7 +352,7 @@ function renderSLA(){
 }
 function recompute(){
   renderSLA();
-  const row=resolveBand($("orders").value); const chip=$("bandchip");
+  const row=resolveBand(ordersVal()); const chip=$("bandchip");
   $("omcVal").textContent = row ? money(row.omc) : "—";
   TICKS.forEach(([k])=>{ $("px_"+k).textContent=row?money(row[k]):"—"; $("row_"+k).classList.toggle("on",row&&$("m_"+k).checked); });
   const s=$("support").value;
@@ -374,20 +382,20 @@ function recompute(){
   if(s!=="standard" && $("m_premium_recovery").checked){ const rc=Number(row.premium_recovery)||0; total+=rc; html+=L("Recovery",money(rc)); }
   $("lines").innerHTML=html+`<div class="div"></div>`;
   $("total").textContent=money(total);
-  $("totalNote").textContent = currency==="GBP" ? "" : `rate £→${SYM[currency]} = ${rates[currency]}`;
+  $("totalNote").textContent = currency==="EUR" ? "" : `rate €→${SYM[currency]} = ${rates[currency]}`;
 }
 
 /* currency */
 function setCurrency(c){
   currency=c;
   document.querySelectorAll(".ccy .seg button").forEach(b=>b.classList.toggle("on",b.dataset.ccy===c));
-  const nonGbp=c!=="GBP"; $("fxWrap").classList.toggle("show",nonGbp);
-  if(nonGbp){ $("fxLabel").textContent=`£→${SYM[c]}`; $("fx").value=rates[c]; }
+  const conv=c!=="EUR"; $("fxWrap").classList.toggle("show",conv); updateAppSymbols();
+  if(conv){ $("fxLabel").textContent=`€→${SYM[c]}`; $("fx").value=rates[c]; }
   recompute();
 }
 document.querySelectorAll(".ccy .seg button").forEach(b=>b.onclick=()=>setCurrency(b.dataset.ccy));
-$("fx").addEventListener("input",e=>{ if(currency!=="GBP"){ rates[currency]=Number(e.target.value)||1; recompute(); }});
-$("orders").addEventListener("input",recompute);
+$("fx").addEventListener("input",e=>{ if(currency!=="EUR"){ rates[currency]=Number(e.target.value)||1; recompute(); }});
+$("orders").addEventListener("input",()=>{ fmtField($("orders")); recompute(); });
 $("support").addEventListener("change",()=>{ updateSupportDeps(); recompute(); });
 $("addApp").onclick=addApp;
 
@@ -395,7 +403,7 @@ $("addApp").onclick=addApp;
 function toast(msg,ok=true){ const t=$("toast"); t.textContent=msg; t.className="toast "+(ok?"ok":"err");
   setTimeout(()=>{ if(t.textContent===msg){t.textContent="";t.className="toast";} },4000); }
 $("save").onclick=async ()=>{
-  const row=resolveBand($("orders").value); if(!row){ toast("Enter an annual order volume first.",false); return; }
+  const row=resolveBand(ordersVal()); if(!row){ toast("Enter an annual order volume first.",false); return; }
   if(!sb){ toast("Connect Supabase to save quotes.",false); return; }
   const mods=selectedModules(row); const omc=Number(row.omc)||0;
   const appRec=apps.reduce((s,a)=>s+(Number(a.recurring)||0),0);
@@ -403,7 +411,7 @@ $("save").onclick=async ()=>{
   const total=omc+mods.reduce((s,m)=>s+m.cost_gbp,0)+appRec;
   $("save").disabled=true;
   const {error}=await sb.from("quotes").insert({ prospect_name:$("prospect").value||null, author:$("author").value||null,
-    annual_orders:Number($("orders").value)||null, band:row.band, currency, fx_rate:currency==="GBP"?null:rates[currency],
+    annual_orders:Number(ordersVal())||null, band:row.band, currency, fx_rate:currency==="EUR"?null:rates[currency],
     support:$("support").value, modules:mods, apps:apps.filter(a=>a.setup||a.recurring||a.name), setup_total_gbp:appSetup, omc_gbp:omc, total_gbp:total });
   $("save").disabled=false;
   if(error){ toast("Save failed: "+error.message,false); return; }
@@ -420,7 +428,7 @@ async function loadHistory(){
 
 /* PDF */
 $("pdf").onclick=()=>{
-  const row=resolveBand($("orders").value); if(!row){ toast("Enter an annual order volume first.",false); return; }
+  const row=resolveBand(ordersVal()); if(!row){ toast("Enter an annual order volume first.",false); return; }
   const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
   const W=210, brand=[11,43,74], teal=[15,133,127], deep=[10,110,105], ink=[22,35,46], muted=[92,112,128];
   const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
@@ -432,9 +440,9 @@ $("pdf").onclick=()=>{
   doc.text($("prospect").value||"Prospect",16,y);
   doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...muted);
   if($("author").value) doc.text("Prepared by "+$("author").value,16,y+6);
-  doc.text(`Annual orders: ${Number($("orders").value||0).toLocaleString("en-GB")}`,W-16,y,{align:"right"});
+  doc.text(`Annual orders: ${Number(ordersVal()||0).toLocaleString("en-GB")}`,W-16,y,{align:"right"});
   doc.text(`Band ${row.band} · ${Number(row.order_min).toLocaleString("en-GB")}–${Number(row.order_max).toLocaleString("en-GB")}/yr`,W-16,y+6,{align:"right"});
-  doc.text(`Currency: ${currency}${currency!=="GBP"?` (rate ${rates[currency]})`:""}`,W-16,y+12,{align:"right"});
+  doc.text(`Currency: ${currency}${currency!=="EUR"?` (rate ${rates[currency]})`:""}`,W-16,y+12,{align:"right"});
   const mods=selectedModules(row); const omc=Number(row.omc)||0; let total=omc;
   const body=[["OneStock Core Platform (included)",money(omc)]];
   mods.forEach(m=>{ total+=m.cost_gbp; body.push([m.label, m.included?"Included":money(m.cost_gbp)]); });
@@ -454,7 +462,7 @@ $("pdf").onclick=()=>{
     headStyles:{fillColor:brand,textColor:255,fontStyle:"bold"},
     columnStyles:{0:{cellWidth:55,textColor:muted}}, margin:{left:16,right:16} });
   let yy=doc.lastAutoTable.finalY+10; doc.setFontSize(8.5); doc.setTextColor(...muted);
-  if(currency!=="GBP"){ doc.text(`${currency} amounts converted from base at an indicative rate of ${rates[currency]}.`,16,yy); yy+=4.5; }
+  if(currency!=="EUR"){ doc.text(`${currency} amounts converted from base at an indicative rate of ${rates[currency]}.`,16,yy); yy+=4.5; }
   doc.text("* Support hours and bank holidays relate to the location of the customer’s headquarters.",16,yy); yy+=4.5;
   doc.text("This is an indicative quotation and does not constitute a binding commercial offer.",16,yy);
   doc.setDrawColor(220,229,234); doc.line(16,280,W-16,280);
