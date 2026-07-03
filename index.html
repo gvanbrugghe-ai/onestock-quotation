@@ -363,7 +363,7 @@ function netCost(base,key){ return (Number(base)||0)*(1+adjOf(key)/100); }
 function appRecNet(a){ return (Number(a.recurring)||0)*(1+parseAdj(a.discount||0)/100); }
 function discStr(v){ v=Number(v)||0; return v===0?"":String(v); }
 function syncDiscInputs(){ if($("disc_omc")) $("disc_omc").value=discStr(lineDisc.omc); TICKS.forEach(([k])=>{ const el=$("disc_"+k); if(el) el.value=discStr(lineDisc[k]); }); if($("disc_support")) $("disc_support").value=discStr(lineDisc.support); if($("disc_premium_recovery")) $("disc_premium_recovery").value=discStr(lineDisc.premium_recovery); }
-function applyGlobalAdj(){ const g=parseAdj($("gdisc").value); lineDisc.omc=g; TICKS.forEach(([k])=>lineDisc[k]=g); lineDisc.support=g; lineDisc.premium_recovery=g; apps.forEach(a=>a.discount=g); syncDiscInputs(); renderApps(); recompute(); }
+function applyGlobalAdj(){ const g=parseAdj($("gdisc").value); TICKS.forEach(([k])=>lineDisc[k]=g); lineDisc.support=g; lineDisc.premium_recovery=g; apps.forEach(a=>a.discount=g); syncDiscInputs(); renderApps(); recompute(); }
 function buildGroups(){
   $("grp_modules").innerHTML=GROUPS.modules.map(([k,l])=>rowHTML(k,l)).join("");
   $("grp_connectors").innerHTML=GROUPS.connectors.map(([k,l])=>rowHTML(k,l)).join("");
