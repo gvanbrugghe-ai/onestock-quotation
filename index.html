@@ -497,7 +497,7 @@ $("save").onclick=async ()=>{
   $("save").disabled=true;
   const {error}=await sb.from("quotes").insert({ prospect_name:$("prospect").value||null, author:$("author").value||null,
     annual_orders:Number(ordersVal())||null, band:row.band, currency, fx_rate:currency==="EUR"?null:rates[currency],
-    support:$("support").value, modules:mods, apps:apps.filter(a=>a.setup||a.recurring||a.name), setup_total_gbp:appSetup, omc_gbp:omc, total_gbp:total });
+    support:$("support").value, modules:mods, apps:apps.filter(a=>a.setup||a.recurring||a.name), adjustments:{...lineDisc}, setup_total_gbp:appSetup, omc_gbp:omc, total_gbp:total });
   $("save").disabled=false;
   if(error){ toast("Save failed: "+error.message,false); return; }
   toast("Quote saved."); loadHistory();
@@ -547,9 +547,12 @@ function loadQuote(q){
   TICKS.forEach(([k])=>{ const cb=$("m_"+k); if(cb) cb.checked=keys.has(k); });
   const rcb=$("m_premium_recovery"); if(rcb && !rcb.disabled) rcb.checked=keys.has("premium_recovery");
   apps = (Array.isArray(q.apps) && q.apps.length)
-    ? q.apps.map(a=>({name:a.name||"", setup:Number(a.setup)||0, recurring:Number(a.recurring)||0}))
+    ? q.apps.map(a=>({name:a.name||"", setup:Number(a.setup)||0, recurring:Number(a.recurring)||0, discount:parseAdj(a.discount||0)}))
     : [{name:"",setup:0,recurring:0}];
+  Object.keys(lineDisc).forEach(k=>delete lineDisc[k]);
+  if(q.adjustments && typeof q.adjustments==="object") Object.assign(lineDisc, q.adjustments);
   renderApps();
+  syncDiscInputs();
   recompute();
   toast("Quote loaded into the form.");
   window.scrollTo({top:0,behavior:"smooth"});
