@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="robots" content="noindex, nofollow" />
-<title>OneStock · Quote Generator (Demo)</title>
+<title>OneStock · Quote Generator</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -83,19 +83,40 @@
   .mod input[type=checkbox]{width:18px; height:18px; accent-color:var(--teal); cursor:pointer}
   .mod .nm{flex:1; font-size:14px}
   .mod .px{font-size:13px; color:var(--muted); min-width:92px; text-align:right}
+  .mod .discwrap, .core-disc{display:inline-flex; align-items:center; gap:2px; color:var(--muted); font-size:12px}
+  .mod .disc, .core-disc .disc{width:44px; padding:6px 7px; border:1px solid var(--border); border-radius:8px; font:inherit; font-size:13px; text-align:right}
+  .core{display:flex; align-items:center; gap:12px}
+  .core >div:first-child{flex:1}
+  .app .appDisc{width:58px; padding:8px 10px; border:1px solid var(--border); border-radius:10px; font:inherit; font-size:14px}
+  .gdisc-wrap{margin-left:auto; display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted)}
+  .gdisc-wrap input{width:46px; padding:5px 7px; border:1px solid var(--border); border-radius:8px; font:inherit; font-size:13px; text-align:right}
+  .support .discwrap{display:inline-flex; align-items:center; gap:2px; color:var(--muted); font-size:12px}
+  .support .disc{width:44px; padding:6px 7px; border:1px solid var(--border); border-radius:8px; font:inherit; font-size:13px; text-align:right}
+  .adjbadge{display:none; margin-left:8px; padding:2px 9px; border-radius:999px; font-size:11px; font-weight:700; vertical-align:middle}
   .mod.on .px{color:var(--ink); font-weight:600}
   .mod.disabled{opacity:.45}
   .mod.disabled input{cursor:not-allowed}
   .support{display:flex; align-items:center; gap:12px; padding:12px 14px; background:#fff; border-bottom:1px solid #EDF2F4}
   .support .nm{flex:1; font-size:14px; font-weight:500}
   select{font:inherit; padding:8px 10px; border:1px solid var(--border); border-radius:9px; background:#fff}
+  .actions .langsel{max-width:150px}
+  .terms select{width:100%}
+  .chk{display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--ink); cursor:pointer; padding:6px 0}
+  .chk input{width:17px; height:17px; accent-color:var(--teal); cursor:pointer}
+  .sum #sched{margin-top:10px}
+  .schedrow{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:7px 0; font-size:13.5px; border-top:1px solid #EDF2F4}
+  .schedrow .yl{font-weight:600; color:var(--ink)}
+  .schedrow .sub{font-size:11.5px; color:var(--muted); margin-top:1px}
+  .schedrow .amt{font-variant-numeric:tabular-nums; font-weight:600; white-space:nowrap}
+  .schedtot{display:flex; justify-content:space-between; gap:10px; padding-top:10px; margin-top:4px; border-top:1px solid #C5E5E1; font-weight:700; color:var(--brand-deep)}
+  .schedtot .amt{font-variant-numeric:tabular-nums}
 
   aside{position:sticky; top:84px}
   .sum .line{display:flex; justify-content:space-between; gap:10px; padding:8px 0; font-size:13.5px}
   .sum .line .l{color:var(--muted)}
   .sum .line.omc .l{color:var(--ink); font-weight:600}
   .sum .div{height:1px; background:var(--border); margin:8px 0}
-  .total{display:flex; justify-content:space-between; align-items:baseline; gap:10px; background:var(--tint); margin:6px -18px -18px; padding:16px 18px; border-radius:0 0 14px 14px; border-top:1px solid #C5E5E1}
+  .total{display:flex; justify-content:space-between; align-items:baseline; gap:10px; background:var(--tint); margin:10px 0 0; padding:14px 16px; border-radius:12px; border:1px solid #C5E5E1}
   .total .l{font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--brand-deep)}
   .total .v{font-size:26px; font-weight:800; color:var(--brand-deep); letter-spacing:-.02em; text-align:right}
   .total .v small{font-size:11px; font-weight:600; color:var(--muted); display:block}
@@ -154,7 +175,7 @@
 <body>
 
 <header>
-  <div class="brand"><div class="wordmark">One<span>Stock</span></div><div class="tagline">Quote Generator · Demo</div></div>
+  <div class="brand"><div class="wordmark">One<span>Stock</span></div><div class="tagline">Quote Generator</div></div>
   <div class="ccy">
     <div class="fx" id="fxWrap"><span id="fxLabel">€→£</span><input id="fx" type="number" step="0.001" /></div>
     <div class="seg">
@@ -180,6 +201,15 @@
           <div class="field"><label class="fld" for="orders">Annual order volume</label><input id="orders" type="text" inputmode="numeric" placeholder="e.g. 75,000" /></div>
           <div id="bandchip" class="bandchip empty"><span class="b">— enter a volume</span></div>
         </div>
+        <div class="row terms" style="margin-top:16px">
+          <div class="field"><label class="fld" for="years">Contract length</label>
+            <select id="years"><option value="1">1 year</option><option value="2">2 years</option><option value="3">3 years</option><option value="4">4 years</option><option value="5">5 years</option></select>
+          </div>
+          <div class="field"><label class="fld">First year billing</label>
+            <label class="chk"><input type="checkbox" id="prorate" /> Prorate to calendar year</label>
+            <select id="startMonth" class="mo" style="display:none; margin-top:8px"><option value="1">Start: January</option><option value="2">Start: February</option><option value="3">Start: March</option><option value="4">Start: April</option><option value="5">Start: May</option><option value="6">Start: June</option><option value="7">Start: July</option><option value="8">Start: August</option><option value="9">Start: September</option><option value="10">Start: October</option><option value="11">Start: November</option><option value="12">Start: December</option></select>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -188,13 +218,13 @@
       <div class="bd">
         <div class="core">
           <div><div class="lab">Core Platform</div><div class="sub">Always included in every quote</div></div>
-          <div class="val num" id="omcVal">—</div>
+          <span class="discwrap core-disc"><input class="disc" id="disc_omc" type="text" placeholder="±" title="Price adjustment % (+/-)" />%</span><div class="val num" id="omcVal">—</div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="hd"><span class="step">3</span><h2>Configure</h2></div>
+      <div class="hd"><span class="step">3</span><h2>Configure</h2><span class="gdisc-wrap"><label for="gdisc">Price adjustment</label><input id="gdisc" type="text" placeholder="±%" />%</span></div>
       <div class="bd" style="padding-top:14px">
         <div class="grouplabel">Modules</div>
         <div class="group" id="grp_modules"></div>
@@ -213,13 +243,13 @@
         <div class="group">
           <div class="support">
             <span class="nm">Support</span>
-            <span id="supPx" class="px num" style="font-size:13px; color:var(--muted); min-width:92px; text-align:right">—</span>
+            <span class="discwrap"><input class="disc" id="disc_support" type="text" placeholder="±" title="Price adjustment % (+/-)" />%</span><span id="supPx" class="px num" style="font-size:13px; color:var(--muted); min-width:92px; text-align:right">—</span>
             <select id="support"><option value="standard">Standard</option><option value="premium">Premium</option><option value="247">24/7</option></select>
           </div>
           <div class="mod" id="row_premium_recovery">
             <input type="checkbox" id="m_premium_recovery" />
-            <span class="nm">Recovery <span id="recHint" style="font-size:11px; color:var(--muted); font-weight:400">· Premium &amp; 24/7</span></span>
-            <span class="px num" id="px_premium_recovery">—</span>
+            <span class="nm"><span id="recName">Recovery</span> <span id="recHint" style="font-size:11px; color:var(--muted); font-weight:400">· Premium &amp; 24/7</span></span>
+            <span class="discwrap"><input class="disc" id="disc_premium_recovery" type="text" placeholder="±" title="Price adjustment % (+/-)" />%</span><span class="px num" id="px_premium_recovery">—</span>
           </div>
           <div class="sla" id="supportDetail"></div>
         </div>
@@ -232,12 +262,14 @@
       <div class="hd"><h2 style="letter-spacing:.06em">Quote summary</h2></div>
       <div class="bd">
         <div id="lines"></div>
-        <div class="total"><span class="l">Total / year</span><span class="v"><span id="total" class="num">—</span><small id="totalNote"></small></span></div>
+        <div class="total"><span class="l">Total / year <span id="adjBadge" class="adjbadge"></span></span><span class="v"><span id="total" class="num">—</span><small id="totalNote"></small></span></div>
+        <div id="sched"></div>
       </div>
     </div>
     <div class="actions">
       <button id="save" class="btn ghost">Save quote</button>
-      <button id="pdf" class="btn primary">Export PDF</button>
+      <select id="lang" class="langsel" title="Image language"><option value="en">English</option><option value="fr">Français</option><option value="it">Italiano</option><option value="de">Deutsch</option><option value="es">Español</option></select>
+      <button id="pdf" class="btn primary">Export payment schedule</button>
     </div>
     <div id="toast" class="toast"></div>
   </aside>
@@ -268,6 +300,7 @@ function renderApps(){
       <input class="appName" id="an_${i}" placeholder="App name" value="${escapeHtml(a.name)}" />
       <div class="appf"><label>Setup</label><div class="cur"><span class="sym">${SYM[currency]}</span><input class="appNum" id="as_${i}" type="text" inputmode="numeric" value="${a.setup?groupThousands(a.setup):""}" placeholder="0" /></div></div>
       <div class="appf"><label>Recurring / yr</label><div class="cur"><span class="sym">${SYM[currency]}</span><input class="appNum" id="ar_${i}" type="text" inputmode="numeric" value="${a.recurring?groupThousands(a.recurring):""}" placeholder="0" /></div></div>
+      <div class="appf"><label>Adj ±%</label><input class="appDisc" id="adx_${i}" type="text" value="${a.discount?String(a.discount):""}" placeholder="0" /></div>
       <div class="appPct${low}" id="ap_${i}">${pctTxt(p)}</div>
       <button class="appDel" id="ad_${i}" title="Remove">×</button>
     </div>`;
@@ -276,6 +309,7 @@ function renderApps(){
     $("an_"+i).addEventListener("input",e=>{ apps[i].name=e.target.value; recompute(); });
     $("as_"+i).addEventListener("input",e=>{ fmtField(e.target); apps[i].setup=digitsToNum(e.target.value); apps[i].recurring=Math.round(apps[i].setup*0.3); $("ar_"+i).value=groupThousands(apps[i].recurring); updatePct(i); recompute(); });
     $("ar_"+i).addEventListener("input",e=>{ fmtField(e.target); apps[i].recurring=digitsToNum(e.target.value); updatePct(i); recompute(); });
+    $("adx_"+i).addEventListener("input",e=>{ apps[i].discount=parseAdj(e.target.value); recompute(); });
     $("ad_"+i).addEventListener("click",()=>{ apps.splice(i,1); if(!apps.length) apps.push({name:"",setup:0,recurring:0}); renderApps(); recompute(); });
   });
 }
@@ -306,27 +340,40 @@ function money(gbp){ if(gbp==null||isNaN(gbp))return"—"; const v=currency==="E
   return new Intl.NumberFormat(LOCALE[currency],{style:"currency",currency,maximumFractionDigits:0}).format(v); }
 function moneyIn(gbp,ccy,rate){ const v= ccy==="EUR"?gbp:gbp*(rate??1);
   return new Intl.NumberFormat(LOCALE[ccy],{style:"currency",currency:ccy,maximumFractionDigits:0}).format(v); }
+function moneyPDF(base){ if(base==null||isNaN(base)) return "-"; const v=currency==="EUR"?base:base*rates[currency]; const n=Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g,","); return SYM[currency]+n; }
 function resolveBand(o){ if(o===""||o==null||isNaN(o))return null;
   const rows=[...PRICING].sort((a,b)=>a.band-b.band);
   for(const r of rows){ if(Number(o)<=Number(r.order_max))return r; } return rows[rows.length-1]||null; }
 
 function selectedModules(row){
   const out=[];
-  TICKS.forEach(([k,label])=>{ if($("m_"+k).checked) out.push({key:k,label,cost_gbp:Number(row[k])||0}); });
+  TICKS.forEach(([k,label])=>{ if($("m_"+k).checked) out.push({key:k,label,cost_gbp:netCost(row[k],k)}); });
   const s=$("support").value;
   const SUPLBL={standard:"Standard",premium:"Premium","247":"24/7"};
-  out.push({key:"support_"+s,label:"Support — "+SUPLBL[s],cost_gbp:Number(row["support_"+s])||0,included:s==="standard"});
-  if(s!=="standard" && $("m_premium_recovery").checked) out.push({key:"premium_recovery",label:"Recovery",cost_gbp:Number(row.premium_recovery)||0});
+  out.push({key:"support_"+s,label:"Support — "+SUPLBL[s],cost_gbp:netCost(row["support_"+s],"support"),included:s==="standard"});
+  if(s!=="standard" && $("m_premium_recovery").checked) out.push({key:"premium_recovery",label:"Recovery Premium",cost_gbp:netCost(row.premium_recovery,"premium_recovery")});
   return out;
 }
 
-function rowHTML(k,label){ return `<div class="mod" id="row_${k}"><input type="checkbox" id="m_${k}" /><span class="nm">${label}</span><span class="px num" id="px_${k}">—</span></div>`; }
+function rowHTML(k,label){ return `<div class="mod" id="row_${k}"><input type="checkbox" id="m_${k}" /><span class="nm">${label}</span><span class="discwrap"><input class="disc" id="disc_${k}" type="text" placeholder="±" title="Price adjustment % (+/-)" />%</span><span class="px num" id="px_${k}">—</span></div>`; }
+const lineDisc={};
+function parseAdj(v){ v=String(v).trim(); const neg=v.charAt(0)==="-"; let n=Number(v.replace(/[^\d.]/g,"")); if(isNaN(n))n=0; n=neg?-n:n; return Math.max(-100,Math.min(1000,n)); }
+function adjOf(key){ return parseAdj(lineDisc[key]||0); }
+function netCost(base,key){ return (Number(base)||0)*(1+adjOf(key)/100); }
+function appRecNet(a){ return (Number(a.recurring)||0)*(1+parseAdj(a.discount||0)/100); }
+function discStr(v){ v=Number(v)||0; return v===0?"":String(v); }
+function syncDiscInputs(){ if($("disc_omc")) $("disc_omc").value=discStr(lineDisc.omc); TICKS.forEach(([k])=>{ const el=$("disc_"+k); if(el) el.value=discStr(lineDisc[k]); }); if($("disc_support")) $("disc_support").value=discStr(lineDisc.support); if($("disc_premium_recovery")) $("disc_premium_recovery").value=discStr(lineDisc.premium_recovery); }
+function applyGlobalAdj(){ const g=parseAdj($("gdisc").value); lineDisc.omc=g; TICKS.forEach(([k])=>lineDisc[k]=g); lineDisc.support=g; lineDisc.premium_recovery=g; apps.forEach(a=>a.discount=g); syncDiscInputs(); renderApps(); recompute(); }
 function buildGroups(){
   $("grp_modules").innerHTML=GROUPS.modules.map(([k,l])=>rowHTML(k,l)).join("");
   $("grp_connectors").innerHTML=GROUPS.connectors.map(([k,l])=>rowHTML(k,l)).join("");
   $("grp_options").innerHTML=GROUPS.options.map(([k,l])=>rowHTML(k,l)).join("");
   TICKS.forEach(([k])=>{ $("m_"+k).addEventListener("change",recompute);
-    $("row_"+k).addEventListener("click",e=>{ if(e.target.tagName!=="INPUT"){ $("m_"+k).checked=!$("m_"+k).checked; recompute(); }}); });
+    const d=$("disc_"+k); if(d) d.addEventListener("input",e=>{ lineDisc[k]=parseAdj(e.target.value); recompute(); });
+    $("row_"+k).addEventListener("click",e=>{ if(e.target.tagName!=="INPUT" && !e.target.closest(".discwrap")){ $("m_"+k).checked=!$("m_"+k).checked; recompute(); }}); });
+  if($("disc_omc")) $("disc_omc").addEventListener("input",e=>{ lineDisc.omc=parseAdj(e.target.value); recompute(); });
+  if($("disc_support")) $("disc_support").addEventListener("input",e=>{ lineDisc.support=parseAdj(e.target.value); recompute(); });
+  if($("disc_premium_recovery")) $("disc_premium_recovery").addEventListener("input",e=>{ lineDisc.premium_recovery=parseAdj(e.target.value); recompute(); });
   // recovery row (built in markup)
   $("row_premium_recovery").addEventListener("click",e=>{ const cb=$("m_premium_recovery");
     if(e.target.tagName!=="INPUT" && !cb.disabled){ cb.checked=!cb.checked; recompute(); }});
@@ -339,7 +386,7 @@ function updateSupportDeps(){
   rec.classList.toggle("disabled",!paid);
   cb.disabled=!paid;
   if(!paid) cb.checked=false;
-  $("recHint").textContent = paid ? "" : "· Premium & 24/7";
+  $("recName").textContent = paid ? "Recovery Premium" : "Recovery"; $("recHint").textContent = paid ? "" : "· Premium & 24/7";
 }
 
 function renderSLA(){
@@ -360,36 +407,67 @@ function renderSLA(){
 function recompute(){
   renderSLA();
   const row=resolveBand(ordersVal()); const chip=$("bandchip");
-  $("omcVal").textContent = row ? money(row.omc) : "—";
-  TICKS.forEach(([k])=>{ $("px_"+k).textContent=row?money(row[k]):"—"; $("row_"+k).classList.toggle("on",row&&$("m_"+k).checked); });
+  $("omcVal").textContent = row ? money(netCost(row.omc,"omc")) : "—";
+  TICKS.forEach(([k])=>{ $("px_"+k).textContent=row?money(netCost(row[k],k)):"—"; $("row_"+k).classList.toggle("on",row&&$("m_"+k).checked); });
   const s=$("support").value;
-  $("supPx").textContent = !row ? "—" : (s==="standard" ? "Included" : money(row["support_"+s]));
-  $("px_premium_recovery").textContent = row ? money(row.premium_recovery) : "—";
+  $("supPx").textContent = !row ? "—" : (s==="standard" ? "Included" : money(netCost(row["support_"+s],"support")));
+  $("px_premium_recovery").textContent = row ? money(netCost(row.premium_recovery,"premium_recovery")) : "—";
   $("row_premium_recovery").classList.toggle("on", row && s!=="standard" && $("m_premium_recovery").checked);
 
   if(!row){ chip.className="bandchip empty"; chip.innerHTML=`<span class="b">— enter a volume</span>`;
     $("lines").innerHTML=`<div class="line"><span class="l">Enter an annual order volume to build a quote.</span></div>`;
-    $("total").textContent="—"; $("totalNote").textContent=""; return; }
+    $("total").textContent="—"; $("totalNote").textContent=""; $("sched").innerHTML=""; { const b=$("adjBadge"); if(b) b.style.display="none"; } return; }
   chip.className="bandchip"; chip.innerHTML=`<span class="b">Band ${row.band}</span><span class="r num">${Number(row.order_min).toLocaleString("en-GB")} – ${Number(row.order_max).toLocaleString("en-GB")} orders/yr</span>`;
 
-  const omc=Number(row.omc)||0; let total=omc;
+  const omc=netCost(row.omc,"omc"); let total=omc;
   const L=(label,amt)=>`<div class="line"><span class="l">${label}</span><span class="num">${amt}</span></div>`;
-  const pick=(arr)=>arr.filter(([k])=>$("m_"+k).checked).map(([k,label])=>({label,cost:Number(row[k])||0}));
+  const pick=(arr)=>arr.filter(([k])=>$("m_"+k).checked).map(([k,label])=>({label,cost:netCost(row[k],k)}));
   const grp=(title,items)=>{ if(!items.length) return ""; let h=`<div class="seg">${title}</div>`; items.forEach(m=>{ total+=m.cost; h+=L(m.label,money(m.cost)); }); return h; };
   let html=`<div class="seg">Core platform</div>`+L("OneStock Core Platform",money(omc));
   html+=grp("Modules",pick(GROUPS.modules));
   html+=grp("Connectors",pick(GROUPS.connectors));
   html+=grp("Options",pick(GROUPS.options));
   const appItems=[];
-  apps.forEach(a=>{ const rec=Number(a.recurring)||0, set=Number(a.setup)||0; if(rec>0||set>0) appItems.push({name:a.name,rec}); });
+  apps.forEach(a=>{ const rec=appRecNet(a), set=Number(a.setup)||0; if(rec>0||set>0) appItems.push({name:a.name,rec}); });
   if(appItems.length){ html+=`<div class="seg">OneStock App</div>`; appItems.forEach(a=>{ total+=a.rec; html+=L(escapeHtml(a.name||"OneStock App")+" (recurring)",money(a.rec)); }); }
   html+=`<div class="seg">Support</div>`;
-  const supCost=Number(row["support_"+s])||0; total+=supCost;
+  const supCost=netCost(row["support_"+s],"support"); total+=supCost;
   html+=L("Support — "+SUP_NAME[s], s==="standard"?"Included":money(supCost));
-  if(s!=="standard" && $("m_premium_recovery").checked){ const rc=Number(row.premium_recovery)||0; total+=rc; html+=L("Recovery",money(rc)); }
+  if(s!=="standard" && $("m_premium_recovery").checked){ const rc=netCost(row.premium_recovery,"premium_recovery"); total+=rc; html+=L("Recovery",money(rc)); }
   $("lines").innerHTML=html+`<div class="div"></div>`;
   $("total").textContent=money(total);
+  renderSchedule(total, apps.reduce((s,a)=>s+(Number(a.setup)||0),0));
+  let listTotal=(Number(row.omc)||0);
+  TICKS.forEach(([k])=>{ if($("m_"+k).checked) listTotal+=Number(row[k])||0; });
+  apps.forEach(a=>{ if((Number(a.recurring)||0)>0) listTotal+=Number(a.recurring)||0; });
+  listTotal+=(Number(row["support_"+s])||0);
+  if(s!=="standard" && $("m_premium_recovery").checked) listTotal+=Number(row.premium_recovery)||0;
+  const effPct = listTotal>0 ? (total/listTotal-1)*100 : 0;
+  const badge=$("adjBadge");
+  if(badge){ badge.style.display="inline-block";
+    if(Math.abs(effPct)>=0.05){ badge.textContent=`${effPct>0?"+":""}${effPct.toFixed(1)}% vs list`; badge.style.background= effPct<0?"#E7F4EC":"#FDECEA"; badge.style.color= effPct<0?"#1E7D46":"#C0392B"; }
+    else { badge.textContent="at list price"; badge.style.background="#EEF2F4"; badge.style.color="#5C7080"; } }
   $("totalNote").textContent = currency==="EUR" ? "" : `rate €→${SYM[currency]} = ${rates[currency]}`;
+}
+
+function renderSchedule(annualRec, setupTotal){
+  const el=$("sched"); if(!el) return;
+  const N=Math.max(1,Math.min(5,parseInt($("years").value)||1));
+  const pro=$("prorate").checked; const M=parseInt($("startMonth").value)||1;
+  if(N<=1 && !pro){ el.innerHTML=""; return; }
+  const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  const f1= pro ? (13-M)/12 : 1;
+  let html=`<div class="seg">Payment schedule · ${N} year${N>1?"s":""}</div>`, grand=0;
+  for(let yr=1; yr<=N; yr++){
+    const rec= yr===1 ? annualRec*f1 : annualRec;
+    const setup= yr===1 ? setupTotal : 0;
+    const yt=rec+setup; grand+=yt;
+    let period = yr===1 ? (pro? `${MON[M-1]}–Dec · prorated ${13-M}/12` : "Full year") : "Full year";
+    let extra = (yr===1 && setup>0) ? `recurring ${money(rec)} + setup ${money(setup)}` : (yr===1 && pro ? `recurring ${money(rec)}` : "");
+    html += `<div class="schedrow"><div><div class="yl">Year ${yr}</div><div class="sub">${period}${extra?` · ${extra}`:""}</div></div><div class="amt">${money(yt)}</div></div>`;
+  }
+  html += `<div class="schedtot"><span>Total contract value</span><span class="amt">${money(grand)}</span></div>`;
+  el.innerHTML=html;
 }
 
 /* currency */
@@ -430,18 +508,30 @@ async function loadHistory(){
   const {data,error}=await sb.from("quotes").select("*").order("created_at",{ascending:false}).limit(50);
   if(error){ $("histWrap").innerHTML=`<div class="empty-h">${error.message}</div>`; return; }
   histQuotes = data || [];
-  renderHist();
+  renderHistRows(histQuotes);
 }
-function renderHist(){
-  const term = ($("histSearch") ? $("histSearch").value : "").trim().toLowerCase();
-  if(!histQuotes.length){ $("histWrap").innerHTML=`<div class="empty-h">No saved quotes yet.</div>`; return; }
-  const rows = term ? histQuotes.filter(q => ((q.prospect_name||"")+" "+(q.author||"")).toLowerCase().includes(term)) : histQuotes;
-  if(!rows.length){ $("histWrap").innerHTML=`<div class="empty-h">No quote matches \u201c${escapeHtml(term)}\u201d.</div>`; return; }
+let shownQuotes=[];
+function renderHistRows(data){
+  shownQuotes=data||[];
+  if(!histQuotes.length && !shownQuotes.length){ $("histWrap").innerHTML=`<div class="empty-h">No saved quotes yet.</div>`; return; }
+  if(!shownQuotes.length){ const term=($("histSearch")?$("histSearch").value:"").trim(); $("histWrap").innerHTML=`<div class="empty-h">No quote matches “${escapeHtml(term)}”.</div>`; return; }
   $("histWrap").innerHTML=`<table class="hist"><thead><tr><th>Date</th><th>Prospect</th><th>By</th><th>Band</th><th>Items</th><th style="text-align:right">Total</th><th></th></tr></thead><tbody>${
-    rows.map(q=>`<tr><td class="num">${new Date(q.created_at).toLocaleDateString("en-GB")}</td><td>${escapeHtml(q.prospect_name||"\u2014")}</td><td>${escapeHtml(q.author||"\u2014")}</td><td class="num">${q.band??"\u2014"}</td><td class="num">${Array.isArray(q.modules)?q.modules.length:0}</td><td class="amt num">${moneyIn(Number(q.total_gbp)||0,q.currency,q.fx_rate)}</td><td class="open"><button class="openq" data-id="${q.id}">Open</button></td></tr>`).join("")}</tbody></table>`;
-  document.querySelectorAll(".openq").forEach(b=>{ b.onclick=()=>loadQuote(histQuotes.find(x=>String(x.id)===String(b.dataset.id))); });
+    shownQuotes.map(q=>`<tr><td class="num">${new Date(q.created_at).toLocaleDateString("en-GB")}</td><td>${escapeHtml(q.prospect_name||"—")}</td><td>${escapeHtml(q.author||"—")}</td><td class="num">${q.band??"—"}</td><td class="num">${Array.isArray(q.modules)?q.modules.length:0}</td><td class="amt num">${moneyIn(Number(q.total_gbp)||0,q.currency,q.fx_rate)}</td><td class="open"><button class="openq" data-id="${q.id}">Open</button></td></tr>`).join("")}</tbody></table>`;
+  document.querySelectorAll(".openq").forEach(b=>{ b.onclick=()=>loadQuote(shownQuotes.find(x=>String(x.id)===String(b.dataset.id))); });
 }
-if($("histSearch")) $("histSearch").addEventListener("input",renderHist);
+let searchTimer=null;
+async function searchHist(){
+  const term=($("histSearch")?$("histSearch").value:"").trim();
+  if(!term){ renderHistRows(histQuotes); return; }
+  const qq=term.replace(/[,%()*]/g," ").trim();
+  const hasSb=(typeof sb!=="undefined" && sb);
+  if(!hasSb || !qq){ renderHistRows(histQuotes.filter(q=>((q.prospect_name||"")+" "+(q.author||"")).toLowerCase().includes(term.toLowerCase()))); return; }
+  const {data,error}=await sb.from("quotes").select("*").or(`prospect_name.ilike.%${qq}%,author.ilike.%${qq}%`).order("created_at",{ascending:false}).limit(50);
+  if(error){ $("histWrap").innerHTML=`<div class="empty-h">${error.message}</div>`; return; }
+  renderHistRows(data||[]);
+}
+function onHistSearch(){ clearTimeout(searchTimer); searchTimer=setTimeout(searchHist,250); }
+if($("histSearch")) $("histSearch").addEventListener("input",onHistSearch);
 
 function loadQuote(q){
   if(!q) return;
@@ -466,49 +556,111 @@ function loadQuote(q){
 }
 
 /* PDF */
-$("pdf").onclick=()=>{
-  const row=resolveBand(ordersVal()); if(!row){ toast("Enter an annual order volume first.",false); return; }
-  const {jsPDF}=window.jspdf; const doc=new jsPDF({unit:"mm",format:"a4"});
-  const W=210, brand=[11,43,74], teal=[15,133,127], deep=[10,110,105], ink=[22,35,46], muted=[92,112,128];
-  const today=new Date().toLocaleDateString("en-GB",{day:"2-digit",month:"long",year:"numeric"});
-  doc.setFillColor(...brand); doc.rect(0,0,W,30,"F");
-  doc.setTextColor(255); doc.setFont("helvetica","bold"); doc.setFontSize(22); doc.text("OneStock",16,16);
-  doc.setFont("helvetica","normal"); doc.setFontSize(11); doc.setTextColor(199,214,227); doc.text("Quotation",16,23);
-  doc.setFontSize(10); doc.text(today,W-16,16,{align:"right"});
-  let y=44; doc.setTextColor(...ink); doc.setFont("helvetica","bold"); doc.setFontSize(15);
-  doc.text($("prospect").value||"Prospect",16,y);
-  doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(...muted);
-  if($("author").value) doc.text("Prepared by "+$("author").value,16,y+6);
-  doc.text(`Annual orders: ${Number(ordersVal()||0).toLocaleString("en-GB")}`,W-16,y,{align:"right"});
-  doc.text(`Band ${row.band} · ${Number(row.order_min).toLocaleString("en-GB")}–${Number(row.order_max).toLocaleString("en-GB")}/yr`,W-16,y+6,{align:"right"});
-  doc.text(`Currency: ${currency}${currency!=="EUR"?` (rate ${rates[currency]})`:""}`,W-16,y+12,{align:"right"});
-  const mods=selectedModules(row); const omc=Number(row.omc)||0; let total=omc;
-  const body=[["OneStock Core Platform (included)",money(omc)]];
-  mods.forEach(m=>{ total+=m.cost_gbp; body.push([m.label, m.included?"Included":money(m.cost_gbp)]); });
-  apps.forEach(a=>{ const rec=Number(a.recurring)||0; if(rec>0){ total+=rec; body.push([`${a.name||"OneStock App"} (recurring)`, money(rec)]); } });
-  doc.autoTable({ startY:y+20, head:[["Item","Annual cost"]], body, foot:[["Total annual cost",money(total)]], theme:"grid",
-    styles:{font:"helvetica",fontSize:10,cellPadding:3,textColor:ink,lineColor:[220,229,234]},
-    headStyles:{fillColor:teal,textColor:255,fontStyle:"bold"},
-    footStyles:{fillColor:[231,243,241],textColor:brand,fontStyle:"bold",fontSize:11},
-    columnStyles:{1:{halign:"right",cellWidth:48}}, margin:{left:16,right:16} });
-  const sName=SUP_NAME[$("support").value]; const sd=SLA[$("support").value];
-  const recOn2=$("support").value!=="standard" && $("m_premium_recovery").checked;
-  const rc=recOn2?RECOVERY.premium:RECOVERY.base;
-  doc.autoTable({ startY:doc.lastAutoTable.finalY+8,
-    head:[[`Support coverage — ${sName}`,""]],
-    body:[["SLA target",sd.sla],["Support hours*",sd.hours],["Support days",sd.days],["Bank holidays*",sd.bank],["Credit service",sd.credit],["Recovery",rc.label],["RPO / RTO",`${rc.rpo} / ${rc.rto}`]],
-    theme:"grid", styles:{font:"helvetica",fontSize:9.5,cellPadding:2.6,textColor:ink,lineColor:[220,229,234]},
-    headStyles:{fillColor:brand,textColor:255,fontStyle:"bold"},
-    columnStyles:{0:{cellWidth:55,textColor:muted}}, margin:{left:16,right:16} });
-  let yy=doc.lastAutoTable.finalY+10; doc.setFontSize(8.5); doc.setTextColor(...muted);
-  if(currency!=="EUR"){ doc.text(`${currency} amounts converted from base at an indicative rate of ${rates[currency]}.`,16,yy); yy+=4.5; }
-  doc.text("* Support hours and bank holidays relate to the location of the customer’s headquarters.",16,yy); yy+=4.5;
-  doc.text("This is an indicative quotation and does not constitute a binding commercial offer.",16,yy);
-  doc.setDrawColor(220,229,234); doc.line(16,280,W-16,280);
-  doc.text("OneStock · Order Management System",16,285); doc.text(today,W-16,285,{align:"right"});
-  const safe=($("prospect").value||"quote").replace(/[^a-z0-9]+/gi,"_");
-  doc.save(`OneStock_Quote_${safe}_${new Date().toISOString().slice(0,10)}.pdf`);
+const I18N={
+  en:{title:"Payment schedule",year:"Year",volume:"Order volume",licence:"OneStock licence",total:"Total / year",adjust:"Price adjustment",included:"Included"},
+  fr:{title:"Échéancier de paiement",year:"Année",volume:"Volume de commandes",licence:"Licence OneStock",total:"Total / an",adjust:"Ajustement tarifaire",included:"Inclus"},
+  it:{title:"Piano di pagamento",year:"Anno",volume:"Volume ordini",licence:"Licenza OneStock",total:"Totale / anno",adjust:"Adeguamento prezzo",included:"Incluso"},
+  de:{title:"Zahlungsplan",year:"Jahr",volume:"Bestellvolumen",licence:"OneStock-Lizenz",total:"Gesamt / Jahr",adjust:"Preisanpassung",included:"Inbegriffen"},
+  es:{title:"Calendario de pagos",year:"Año",volume:"Volumen de pedidos",licence:"Licencia OneStock",total:"Total / año",adjust:"Ajuste de precio",included:"Incluido"}
 };
+function fmtMoneyImg(base){ const v=currency==="EUR"?base:base*rates[currency]; const n=Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); return currency==="EUR" ? n+" €" : SYM[currency]+" "+n; }
+function fmtVolImg(n){ return Number(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g," "); }
+function currencyLabel(){ return currency + (currency!=="EUR" ? " (rate "+rates[currency]+")" : ""); }
+function wrapText(ctx,text,maxW){ const words=String(text).split(" "); const lines=[]; let cur=""; words.forEach(w=>{ const t=cur?cur+" "+w:w; if(ctx.measureText(t).width>maxW && cur){ lines.push(cur); cur=w; } else cur=t; }); if(cur)lines.push(cur); return lines; }
+
+function exportScheduleImage(){
+  const row=resolveBand(ordersVal()); if(!row){ toast("Enter an annual order volume first.",false); return; }
+  const T=I18N[$("lang").value]||I18N.en;
+  const N=Math.max(1,Math.min(5,parseInt($("years").value)||1));
+  const pro=$("prorate").checked; const M=parseInt($("startMonth").value)||1;
+  const f1= pro ? (13-M)/12 : 1;
+  const factor=(yr)=> yr===1 ? f1 : 1;
+
+  const rows=[];
+  const vol=Number(ordersVal())||0;
+  rows.push({label:T.volume, grey:true, plain:true, values:Array.from({length:N},(_,i)=> (i===0 && pro) ? "–" : fmtVolImg(vol))});
+
+  // OneStock licence = core platform + modules + connectors + options (net of discount)
+  let licence=netCost(row.omc,"omc"), licenceList=Number(row.omc)||0;
+  selectedModules(row).forEach(m=>{ if(m.key.indexOf("support_")===0 || m.key==="premium_recovery") return; licence+=m.cost_gbp; licenceList+=Number(row[m.key])||0; });
+  rows.push({label:T.licence, base:licence, listBase:licenceList});
+
+  // OneStock apps (recurring, net)
+  apps.forEach(a=>{ const rec=appRecNet(a); if(rec>0) rows.push({label:(a.name||"OneStock App"), base:rec, listBase:Number(a.recurring)||0}); });
+
+  // Support (level + conditions)
+  const s=$("support").value, sd=SLA[s];
+  rows.push({label:"Support — "+SUP_NAME[s], sub:"SLA "+sd.sla+" · "+sd.hours+" · "+sd.days, base:netCost(row["support_"+s],"support"), listBase:Number(row["support_"+s])||0, included:s==="standard"});
+
+  // Recovery Premium (with conditions)
+  if(s!=="standard" && $("m_premium_recovery").checked){ const rc=RECOVERY.premium; rows.push({label:"Recovery Premium", sub:"RPO "+rc.rpo+" · RTO "+rc.rto, base:netCost(row.premium_recovery,"premium_recovery"), listBase:Number(row.premium_recovery)||0}); }
+
+  rows.forEach(r=>{ if(r.plain) return; r.values = r.included
+    ? Array.from({length:N},()=>T.included)
+    : Array.from({length:N},(_,i)=> fmtMoneyImg(r.base*factor(i+1))); });
+
+  const totals=Array.from({length:N},(_,i)=>{ let t=0; rows.forEach(r=>{ if(r.plain||r.included) return; t+=r.base*factor(i+1); }); return t; });
+  let netSum=0, listSum=0; rows.forEach(r=>{ if(r.plain||r.included) return; netSum+=r.base; listSum+=r.listBase||0; });
+  const effPct = listSum>0 ? (netSum/listSum-1)*100 : 0;
+  const totalRow={label:T.total+(Math.abs(effPct)>=0.5?` (${effPct>0?"+":""}${effPct.toFixed(0)}%)`:""), isTotal:true, values:totals.map(fmtMoneyImg)};
+
+  const draw=()=>drawScheduleCanvas(T,N,rows,totalRow);
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(draw); else draw();
+}
+
+function drawScheduleCanvas(T,N,rows,totalRow){
+  const SC=2, padOut=36, labelW=310, yearW=150, headerH=46, baseRowH=48, lineH=18, subLineH=15, cellPadX=16, titleH=66;
+  const NAVY="#0B2B4A", GREEN="#E4F1EE", GREY="#E9ECEF", INK="#16232E", MUTED="#5C7080", TOTALBG="#CDE6E1";
+  const FONT_LABEL='700 15px "Lato", Arial, sans-serif', FONT_VAL='15px "Lato", Arial, sans-serif', FONT_HEAD='700 15px "Lato", Arial, sans-serif', FONT_SUB='12.5px "Lato", Arial, sans-serif';
+  const tableW=labelW+N*yearW, canvasW=padOut*2+tableW;
+
+  const cv=document.createElement("canvas"); const ctx=cv.getContext("2d");
+  ctx.font=FONT_LABEL;
+  const allRows=[...rows,totalRow];
+  allRows.forEach(r=>{ r.lines=wrapText(ctx,r.label,labelW-2*cellPadX); const subH=r.sub?subLineH+2:0; r.h=Math.max(baseRowH, r.lines.length*lineH+subH+22); });
+
+  const tableH=headerH+allRows.reduce((s,r)=>s+r.h,0);
+  const canvasH=padOut*2+titleH+tableH;
+  cv.width=canvasW*SC; cv.height=canvasH*SC; ctx.scale(SC,SC);
+  ctx.fillStyle="#ffffff"; ctx.fillRect(0,0,canvasW,canvasH);
+
+  const x0=padOut; let y=padOut;
+  ctx.fillStyle=INK; ctx.font='700 21px "Lato", Arial, sans-serif'; ctx.textBaseline="alphabetic"; ctx.textAlign="left";
+  ctx.fillText(T.title,x0,y+24);
+  const sub=[$("prospect").value, currencyLabel()].filter(Boolean).join("   ·   ");
+  if(sub){ ctx.font='13px "Lato", Arial, sans-serif'; ctx.fillStyle=MUTED; ctx.fillText(sub,x0,y+46); }
+  y+=titleH;
+
+  const tableTop=y;
+  ctx.fillStyle=NAVY; ctx.fillRect(x0,y,tableW,headerH);
+  ctx.fillStyle="#ffffff"; ctx.font=FONT_HEAD; ctx.textBaseline="middle"; ctx.textAlign="center";
+  for(let k=1;k<=N;k++){ ctx.fillText(T.year+" "+k, x0+labelW+(k-1)*yearW+yearW/2, y+headerH/2); }
+  y+=headerH;
+
+  const bounds=[y];
+  allRows.forEach(r=>{
+    const bg = r.isTotal ? TOTALBG : (r.grey ? GREY : GREEN);
+    ctx.fillStyle=bg; ctx.fillRect(x0,y,tableW,r.h);
+    const subH=r.sub?subLineH+2:0, blockH=r.lines.length*lineH+subH, top=y+(r.h-blockH)/2;
+    ctx.fillStyle=INK; ctx.font= r.isTotal?FONT_HEAD:FONT_LABEL; ctx.textAlign="left"; ctx.textBaseline="middle";
+    r.lines.forEach((ln,li)=>{ ctx.fillText(ln, x0+cellPadX, top+li*lineH+lineH/2); });
+    if(r.sub){ ctx.font=FONT_SUB; ctx.fillStyle=MUTED; ctx.fillText(r.sub, x0+cellPadX, top+r.lines.length*lineH+subLineH/2+2); }
+    ctx.font= r.isTotal?FONT_HEAD:FONT_VAL; ctx.textAlign="center"; ctx.fillStyle=INK;
+    r.values.forEach((val,i)=>{ ctx.fillText(val, x0+labelW+i*yearW+yearW/2, y+r.h/2); });
+    y+=r.h; bounds.push(y);
+  });
+  const tableBottom=y;
+
+  ctx.strokeStyle="#ffffff"; ctx.lineWidth=2;
+  for(let k=0;k<=N;k++){ const lx=x0+labelW+k*yearW; ctx.beginPath(); ctx.moveTo(lx,tableTop); ctx.lineTo(lx,tableBottom); ctx.stroke(); }
+  bounds.forEach(by=>{ ctx.beginPath(); ctx.moveTo(x0,by); ctx.lineTo(x0+tableW,by); ctx.stroke(); });
+
+  cv.toBlob(b=>{ const url=URL.createObjectURL(b); const a=document.createElement("a"); a.href=url;
+    const safe=($("prospect").value||"quote").replace(/[^a-z0-9]+/gi,"_");
+    a.download="OneStock_Schedule_"+safe+".png"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); }, "image/png");
+  toast("Payment schedule image downloaded.");
+}
+$("pdf").onclick=exportScheduleImage;
 
 /* init */
 async function loadPricing(){
@@ -518,6 +670,11 @@ async function loadPricing(){
   if(error){ showBanner("Could not load pricing: "+error.message); return; }
   PRICING=data||[]; recompute(); loadHistory();
 }
+$("gdisc").addEventListener("input",applyGlobalAdj);
+$("years").addEventListener("change",recompute);
+$("prorate").addEventListener("change",()=>{ $("startMonth").style.display=$("prorate").checked?"":"none"; recompute(); });
+$("startMonth").addEventListener("change",recompute);
+$("startMonth").value=String(new Date().getMonth()+1);
 buildGroups();
 renderApps();
 $("support").value="standard";   // default Support = Standard
